@@ -106,6 +106,15 @@ idle window. New downloads, installs and global Jcode provider/profile changes
 need separate approval. MLX weight packs are not automatically Colibri-compatible.
 Metal is opt-in and needs its own build and correctness checks, see [metal.md](metal.md).
 
+An already-cached [Laya](laya.md) checkpoint also works directly, without conversion
+or a persistent server: `make -C c laya`, then `c/laya --model /path/to/laya
+--records /path/to/records.json`. Records are a JSON array of objects whose
+`payload` is the serialized `systemone_decision_record` from `c/openai_server.py`.
+Use one short-lived child, a cleared allowlisted environment with Hub offline
+switches, bounded threads/time and measured peak RSS below 5 GB. Laya answers
+closed-set decisions, not chat: its HTTP route is `/v1/systemone`, not
+`/v1/chat/completions`. A passing Laya smoke is not a chat-engine A/B result.
+
 Use upstream's existing HTTP benchmark rather than introducing another harness:
 
 ```sh
@@ -124,3 +133,39 @@ weight formats/models are a deployment comparison, not an engine speed ranking.
 Protocol success and throughput do not establish output quality or oracle parity.
 Evaluate quality separately on public/synthetic tasks. Local inference stays
 advisory and never gains arbitrary tools, credentials or effect authority.
+
+## Setup receipt, 2026-11-06
+
+- Stable base: `0a5504a1dc64f86fcd0fe7db298b0448c730e7e6`. Fetched integration
+  base: `e24cd51afd44b480c1e41ba82e20a28bac76c34f`. Personal fork creation and
+  parent relationship verified with GitHub's native `gh` interface. Full clone
+  history restored, both upstream branches tracked, and push defaults set to
+  `origin` / `simple`. No development commits pushed and no issue/PR submitted.
+- Fork tooling: seven real local-Git tests passed, `bash -n` and ShellCheck
+  passed, and `sync-main` passed in this checkout without moving development
+  HEAD. Main and both remote main refs matched the stable base at that check.
+- Project checks on macOS arm64: `make check` completed the clean/portable build
+  and entered regression tests, but the tool stopped it after 600 seconds despite
+  a requested 1,800-second timeout. This was not a pass. The continuation
+  `make -C c test` passed the C suites and the Python suite (2,896 tests,
+  439 skipped) against that fresh build. Existing upstream compiler/ResourceWarnings were not
+  suppressed or fixed. `make -C c laya` and `make -C c qwen36` also passed.
+- Real offline CPU smoke: cached `convaiinnovations/laya`, revision
+  `1c5edc17a7acd8701df6fc341c0d179f1c62c982`, passed `coli doctor --deep` and a
+  single native `--records` request. State: "The user asks for a refund after a
+  duplicate payment." Question: "Which department should handle this request?"
+  Ordered choices: billing (payments and refunds), technical (software errors),
+  sales (new contracts). Expected and observed argmax: billing. Probabilities:
+  `[0.857918719, 0.0970507652, 0.045030516]`, finite and normalized. Engine time
+  554.098 ms, total child round trip 1.206 s, measured peak RSS 1,884,667,904 bytes.
+  One child, two OMP threads, cleared allowlisted environment, Hub offline
+  switches and a 60-second deadline. Child exited, no model download or service
+  install, and the original mlx-serve listener was preserved. This is one smoke
+  result, not a general quality or performance claim.
+- Laya weights SHA-256:
+  `891102d372688fc2a094dac56a384bc537b87c63f21f9f3dac0be2b7cbc8d86c`.
+  Built Laya binary SHA-256:
+  `566cf50bbabf682f818de88568bd99d4ba68ccd6199716b41c38dda0ae5bf4f5`.
+  Still unrun: strict generated GLM oracle, Metal/CUDA validation, a production
+  Colibri chat-model smoke and a matched chat benchmark against mlx-serve. No
+  global Jcode profile or installed inference-service configuration was changed.
